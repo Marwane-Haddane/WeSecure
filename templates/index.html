@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+
+{% block title %}Welcome to WeSecure{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col items-center justify-center">
+    <div class="text-center space-y-8 animate-fade-in-up max-w-5xl">
+
+        <!-- Badge -->
+        <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyber-800/80 border border-cyber-green/30 text-cyber-green text-xs font-mono uppercase tracking-widest mb-4">
+            <span class="w-2 h-2 rounded-full bg-cyber-green animate-pulse"></span>
+            CS50 Capstone Project
+        </div>
+
+        <!-- Hero Header -->
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight">
+            Next-Gen <span
+                class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-green to-teal-400">Security</span>
+            <br /> Infrastructure
+        </h1>
+
+        <p class="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-400 mx-auto max-w-3xl leading-relaxed">
+            WeSecure is an open-source, scalable cybersecurity platform seamlessly integrating advanced cryptographic
+            engines, automated n8n vulnerability scanners, and localized AI phishing detection.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
+            <a href="{{ url_for('register') }}"
+                class="px-8 py-4 text-lg font-bold rounded-xl bg-cyber-green text-black hover:bg-cyber-greenGlow hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.8)]">
+                Create Account
+            </a>
+            <a href="#about"
+                class="px-8 py-4 text-lg font-bold rounded-xl border-2 border-cyber-border text-gray-300 hover:border-cyber-green hover:text-cyber-green transition-all hover:-translate-y-1">
+                About the Developer
+            </a>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+            <div
+                class="bg-white dark:bg-cyber-800/40 p-8 rounded-3xl border border-gray-100 dark:border-cyber-border/50 hover:border-cyber-green/50 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm group">
+                <div
+                    class="w-14 h-14 bg-cyber-green/10 text-cyber-green rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Crypto Engine</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Enterprise-grade data protection
+                    utilizing AES-GCM, RSA, Fernet, PBKDF2 arrays, and comprehensive data encoding logic.</p>
+            </div>
+
+            <div
+                class="bg-white dark:bg-cyber-800/40 p-8 rounded-3xl border border-gray-100 dark:border-cyber-border/50 hover:border-cyber-green/50 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm group">
+                <div
+                    class="w-14 h-14 bg-cyber-green/10 text-cyber-green rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Vuln Scanner</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Automated webhook orchestration
+                    utilizing n8n pipelines to securely analyze target URLs for widespread OWASP Top 10 vulnerabilities.
+                </p>
+            </div>
+
+            <div
+                class="bg-white dark:bg-cyber-800/40 p-8 rounded-3xl border border-gray-100 dark:border-cyber-border/50 hover:border-cyber-green/50 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm group">
+                <div
+                    class="w-14 h-14 bg-cyber-blue/10 text-blue-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">AI Mail Classifier</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">100% localized, air-gapped machine
+                    learning models (TinyLlama) deployed to classify and neutralize phishing attempts securely.</p>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div id="about" class="mt-32 pt-20 border-t border-gray-200 dark:border-cyber-border text-left pb-20">
+            <div
+                class="bg-gradient-to-br from-cyber-900 to-cyber-800 p-10 sm:p-14 rounded-3xl border border-cyber-border shadow-2xl relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                    <svg class="w-64 h-64 text-cyber-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                </div>
+
+                <div class="relative z-10">
+                    <h2 class="text-xl font-mono text-cyber-green mb-4">&gt; ARCHITECT & FOUNDER</h2>
+                    <h3 class="text-4xl font-extrabold text-white mb-6">Marwane Haddane</h3>
+                    <p class="text-gray-300 text-lg max-w-2xl leading-relaxed mb-10">
+                        This platform was developed as my culminating capstone project for the CS50 certification. It
+                        demonstrates comprehensive full-stack engineering, combining secure <strong>Flask</strong>
+                        backend routing with advanced dynamic frontends built on <strong>TailwindCSS</strong> and modern
+                        asynchronous JavaScript.
+                    </p>
+
+                    <div class="flex gap-4">
+                        <a href="https://www.linkedin.com/in/marwaen-haddane/"
+                            class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-colors backdrop-blur-md border border-white/10 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                            Contact Me
+                        </a>
+                        <a href="https://github.com/Marwane-Haddane/WeSecure.git" target="_blank"
+                            class="px-6 py-3 bg-transparent hover:bg-white/5 text-gray-300 hover:text-white rounded-xl font-semibold transition-colors flex items-center gap-2 border border-transparent hover:border-white/10">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd"
+                                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            GitHub Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

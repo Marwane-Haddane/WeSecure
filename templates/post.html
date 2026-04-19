@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up pb-12">
+    <!-- Breadcrumb back link -->
+    <a href="{{ url_for('blog') }}" class="mb-8 inline-flex items-center text-sm font-medium text-gray-500 hover:text-cyber-green transition-colors">
+        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Bulletins
+    </a>
+
+    <!-- Article Header -->
+    <header class="mb-10 text-center max-w-4xl mx-auto">
+        <p class="text-cyber-green font-mono text-sm tracking-wider uppercase mb-3">Threat Intel • {{ post.date }}</p>
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white glow-text mb-6">
+            {{ post.title }}
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            {{ post.short_description }}
+        </p>
+    </header>
+
+    <!-- Article Content -->
+    <article class="prose prose-lg dark:prose-invert prose-green mx-auto max-w-4xl bg-white dark:bg-cyber-800 p-8 sm:p-12 rounded-2xl shadow-xl border border-gray-200 dark:border-cyber-border prose-a:text-cyber-green hover:prose-a:text-cyber-greenGlow prose-headings:text-gray-900 dark:prose-headings:text-gray-100">
+        {{ post.content | safe }}
+    </article>
+    
+    <!-- Footer CTA -->
+    <div class="mt-16 text-center">
+        {% if session.user_id %}
+            <a href="{{ url_for('dashboard') }}" class="btn-primary inline-flex w-auto px-8 max-w-md mx-auto">Return to Dashboard</a>
+        {% else %}
+            <div class="p-6 bg-cyber-800/50 rounded-2xl max-w-2xl mx-auto border border-cyber-green/30">
+                <h3 class="text-lg font-bold mb-2">Want to test your systems against these threats?</h3>
+                <p class="text-sm text-gray-400 mb-4">Register for a free WeSecure account to access our cryptographic and vulnerability analysis tools.</p>
+                <a href="{{ url_for('register') }}" class="btn-primary inline-flex w-auto px-8 mx-auto">Create Account</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

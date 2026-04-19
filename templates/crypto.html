@@ -1,0 +1,264 @@
+{% extends "layout.html" %}
+
+{% block title %}Crypto Tools{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in-up">
+    <!-- Header -->
+    <div class="border-b border-gray-200 dark:border-cyber-border pb-5 mb-8">
+        <h2 class="text-3xl font-bold leading-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <svg class="h-8 w-8 text-cyber-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Advanced Cryptographic Engine
+        </h2>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Process data using industry standard ciphers, hashing functions, and encodings.
+            <br />Current Session Default Key (used for Fernet/AES if left blank): <span
+                class="font-mono bg-cyber-800/50 text-cyber-green px-2 py-1 rounded truncate inline-block max-w-[200px] align-bottom">{{
+                session.get('crypto_key')[0:15] }}...</span>
+        </p>
+    </div>
+
+    <!-- Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Input section -->
+        <div class="cyber-card p-6 flex flex-col space-y-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-cyber-border pb-2">
+                Configuration</h3>
+
+            <!-- Operation Selector -->
+            <div class="cyber-select" data-select>
+                <label class="cyber-label">Operation</label>
+
+                <button type="button" class="cyber-select-btn" data-btn>
+                    <span data-label>Select Operation</span>
+                    <span class="cyber-arrow">⌄</span>
+                </button>
+
+                <div class="cyber-options hidden" data-options>
+                    <div class="cyber-option" data-value="encrypt">Encrypt</div>
+                    <div class="cyber-option" data-value="decrypt">Decrypt</div>
+                    <div class="cyber-option" data-value="hash">Hash</div>
+                    <div class="cyber-option" data-value="encode">Encode</div>
+                    <div class="cyber-option" data-value="decode">Decode</div>
+                </div>
+
+                <input type="hidden" id="op-selector" value="encrypt">
+            </div>
+
+            <!-- Algorithm Selector -->
+            <div class="cyber-select" data-select>
+                <label class="cyber-label">Algorithm</label>
+
+                <button type="button" class="cyber-select-btn" data-btn>
+                    <span data-label>Select Algorithm</span>
+                    <span class="cyber-arrow">⌄</span>
+                </button>
+
+                <div class="cyber-options hidden" data-options id="algo-options">
+                </div>
+
+                <input type="hidden" id="algo-selector">
+            </div>
+
+            <!-- Key Input -->
+            <div id="key-input-wrapper">
+                <label for="key-input" class="cyber-label">Cryptographic Key / Salt / Password <span
+                        class="text-xs text-gray-500"><br />(Leave blank to use session key for
+                        Fernet/AES)</span></label>
+                <textarea id="key-input" rows="2"
+                    class="cyber-input font-mono text-sm bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 py-2 px-3 resize-none w-full mt-2"
+                    placeholder="Enter secret key..."></textarea>
+            </div>
+
+            <!-- Text Input -->
+            <div class="flex-grow">
+                <label for="crypto-input" class="cyber-label">Input Data</label>
+                <textarea id="crypto-input" rows="5"
+                    class="cyber-input font-mono text-sm bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 py-2 px-3 resize-none w-full"
+                    autofocus placeholder="Paste text or ciphertext to process..."></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+                <button type="button"
+                    class="w-full flex justify-center items-center gap-2 px-4 py-3 text-lg font-bold uppercase tracking-widest rounded-xl bg-cyber-green text-black hover:bg-cyber-greenGlow hover:-translate-y-1 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.8)]"
+                    onclick="processAdvancedCrypto()">Execute</button>
+            </div>
+        </div>
+
+        <!-- Output section -->
+        <div class="cyber-card p-6 border-l-4 border-l-cyber-green flex flex-col">
+            <h3
+                class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex justify-between items-center border-b border-cyber-border pb-2">
+                <span>Result Output</span>
+                <span id="crypto-status" class="text-sm font-normal text-gray-400 hidden">Processing...</span>
+            </h3>
+
+            <div class="relative flex-grow min-h-[200px]">
+                <textarea id="crypto-output" readonly
+                    class="cyber-input font-mono text-sm h-full absolute inset-0 bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 cursor-text py-4 px-4 resize-none"
+                    placeholder="Results will appear here..."></textarea>
+
+                <button type="button" onclick="copyResult()"
+                    class="absolute top-2 right-2 p-2 hover:bg-gray-200 dark:hover:bg-cyber-700 rounded-md transition-colors text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white focus:outline-none"
+                    title="Copy to clipboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div id="copy-confirm"
+                class="text-xs font-bold text-cyber-green mt-2 h-4 transition-opacity opacity-0 text-center uppercase tracking-widest">
+                Copied to
+                clipboard!</div>
+        </div>
+    </div>
+
+    <!-- Educational section -->
+    <div class="cyber-card p-8 mt-12 bg-white/50 dark:bg-cyber-800/30 border border-gray-200 dark:border-cyber-border">
+        <h3 class="text-2xl font-bold leading-tight text-gray-900 dark:text-white mb-6">CTF Guide: Understanding the
+            Algorithms</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div>
+                <h4 class="text-lg font-semibold text-cyber-green mb-2">🔐 Symmetric Encryption</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Same key decrypts and encrypts. Fast and effective.</p>
+                <ul class="space-y-4">
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">Fernet:</strong> A secure wrapper around
+                        AES-128-CBC.
+                        <br /><span
+                            class="text-xs bg-gray-100 dark:bg-cyber-900 px-1 py-0.5 rounded text-gray-600 dark:text-gray-300">How
+                            to spot:</span> Outputs are Base64 strings that *always* begin with <code
+                            class="text-cyber-green text-xs">gAAAAAB...</code>
+                    </li>
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">AES-GCM:</strong> Advanced Encryption Standard in
+                        Galois/Counter Mode. Provides both confidentiality and authenticity.
+                        <br /><span
+                            class="text-xs bg-gray-100 dark:bg-cyber-900 px-1 py-0.5 rounded text-gray-600 dark:text-gray-300">How
+                            to spot:</span> Looks like standard Base64 blobs. If you decode it into bytes, the first 12
+                        bytes are the Nonce, followed by ciphertext and an auth tag.
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-lg font-semibold text-cyber-green mb-2">🔑 Asymmetric Encryption</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Requires Public Key to encrypt, Private Key to decrypt.
+                </p>
+                <ul class="space-y-4">
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">RSA:</strong> Standard for transmitting shared
+                        secrets.
+                        <br /><span
+                            class="text-xs bg-gray-100 dark:bg-cyber-900 px-1 py-0.5 rounded text-gray-600 dark:text-gray-300">How
+                            to spot:</span> You will usually find RSA Keys wrapped in PEM format, clearly marked: <code
+                            class="text-cyber-green text-xs">-----BEGIN PUBLIC KEY-----</code>. Ciphertext is very large
+                        and appears totally random.
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-lg font-semibold text-cyber-green mb-2">🔏 Hashing</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">One-way functions. Cannot be decrypted, only cracked.
+                </p>
+                <ul class="space-y-4">
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">SHA-256:</strong> Standard integrity checker.
+                        <br /><span
+                            class="text-xs bg-gray-100 dark:bg-cyber-900 px-1 py-0.5 rounded text-gray-600 dark:text-gray-300">How
+                            to spot:</span> Exactly 64 characters long in hexadecimal format (e.g., <code
+                            class="text-cyber-green text-xs">8d969eef6...</code>).
+                    </li>
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">PBKDF2:</strong> Key Derivation Function. Uses a
+                        salt and thousands of iterations to make brute-forcing passwords incredibly slow.
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-lg font-semibold text-cyber-green mb-2">🔄 Encoding</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">NOT encryption! Used to make binary data text-safe.</p>
+                <ul class="space-y-4">
+                    <li>
+                        <strong class="text-gray-900 dark:text-white">Base64:</strong>
+                        <br /><span
+                            class="text-xs bg-gray-100 dark:bg-cyber-900 px-1 py-0.5 rounded text-gray-600 dark:text-gray-300">How
+                            to spot:</span> Alphanumeric character set (A-Z, a-z, 0-9, +, /). It very often ends in
+                        padding characters: <code class="text-cyber-green text-xs">=</code> or <code
+                            class="text-cyber-green text-xs">==</code>.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const algoMaps = {
+        'encrypt': [
+            { value: 'fernet', text: 'Fernet (Symmetric Core)' },
+            { value: 'aes_gcm', text: 'AES-GCM (Symmetric)' },
+            { value: 'rsa', text: 'RSA (Requires PEM Public Key)' }
+        ],
+        'decrypt': [
+            { value: 'fernet', text: 'Fernet (Symmetric Core)' },
+            { value: 'aes_gcm', text: 'AES-GCM (Symmetric)' },
+            { value: 'rsa', text: 'RSA (Requires PEM Private Key)' }
+        ],
+        'hash': [
+            { value: 'sha256', text: 'SHA-256' },
+            { value: 'pbkdf2', text: 'PBKDF2 (Password Hardening)' }
+        ],
+        'encode': [
+            { value: 'base64', text: 'Base64' }
+        ],
+        'decode': [
+            { value: 'base64', text: 'Base64' }
+        ]
+    };
+
+    function updateAlgoOptions() {
+        const op = document.getElementById('op-selector').value;
+        const algoSelector = document.getElementById('algo-selector');
+        algoSelector.innerHTML = ''; // clear
+
+        algoMaps[op].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.innerText = item.text;
+            algoSelector.appendChild(opt);
+        });
+
+        updateKeyVisibility();
+    }
+
+    function updateKeyVisibility() {
+        const op = document.getElementById('op-selector').value;
+        const algo = document.getElementById('algo-selector').value;
+        const keyWrapper = document.getElementById('key-input-wrapper');
+
+        // Hide key if action is encode/decode or standard sha256 hash
+        if (op === 'encode' || op === 'decode' || (op === 'hash' && algo === 'sha256')) {
+            keyWrapper.classList.add('hidden');
+        } else {
+            keyWrapper.classList.remove('hidden');
+        }
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+        updateAlgoOptions();
+    });
+
+</script>
+{% endblock %}

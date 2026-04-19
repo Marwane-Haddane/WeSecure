@@ -1,0 +1,211 @@
+{
+  "name": "website call",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "scan-report",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a3ee8a2d-16b7-444e-96c7-9ed60bceecea",
+      "name": "Webhook",
+      "webhookId": "3e43370a-9ae6-429c-8549-b9e2ab450865"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b01e2bcc-1e3a-4e55-bf8d-3d6d5116878c",
+              "name": "website",
+              "value": "={{ $json.body.url }}",
+              "type": "string"
+            },
+            {
+              "id": "49289351-5b49-4a78-895e-3c0068f2bc9f",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        16
+      ],
+      "id": "33b48633-bb9b-4798-9755-0b8f1b64712f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "8B3z8M5aVA1CXUto",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/8B3z8M5aVA1CXUto",
+          "cachedResultName": "Web security scanner for OWASP compliance with Markdown reports"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "website": "={{ $json.website }}",
+            "mail": "={{ $json.email }}",
+            "date": "={{ $now.format('yyyy-MM-dd_HHmmss') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mail",
+              "displayName": "mail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        464,
+        0
+      ],
+      "id": "711ea7ef-99b5-4525-bb8e-e6c8f860d46d",
+      "name": "Call 'Web security scanner for OWASP compliance with Markdown reports'"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "70f481d0-85ef-4410-a277-73601f96881d",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "marwane-x-cs50.app.n8n.cloud",
+            "user-agent": "python-requests/2.33.1",
+            "content-length": "93",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "196.119.61.225",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "MA",
+            "cf-ray": "9ee01fc84d512180-MAD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "196.119.61.225, 172.68.134.119",
+            "x-forwarded-host": "marwane-x-cs50.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-7-89db87d5d-ssjls",
+            "x-is-trusted": "yes",
+            "x-real-ip": "196.119.61.225"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "url": "http://urlscan.io/search/#user:me%20OR%20team:me",
+            "email": "anasabohind@gmail.com"
+          },
+          "webhookUrl": "https://marwane-x-cs50.app.n8n.cloud/webhook/scan-report",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Call 'Web security scanner for OWASP compliance with Markdown reports'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Web security scanner for OWASP compliance with Markdown reports'": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "750451db-05fd-4cc1-9cbb-35d44496871c",
+  "meta": {
+    "instanceId": "34227740312ed78b96c5ad3f3c95d64a69f7d9b283a882e503a95a245d576aa3"
+  },
+  "id": "BrLEwlFyZwks0aly",
+  "tags": []
+}

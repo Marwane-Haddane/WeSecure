@@ -1,0 +1,58 @@
+# ==============================
+# Python Virtual Environment
+# ==============================
+venv/
+env/
+.venv/
+
+# ==============================
+# Python Cache & Bytecode
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ==============================
+# Environment Variables (SECRETS)
+# ==============================
+.env
+.env.local
+.env.production
+
+# ==============================
+# AI Model Weights (too large for GitHub)
+# ==============================
+*.gguf
+data/.cache/
+
+# ==============================
+# IDE & Editor Settings
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================
+# OS Generated Files
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Flask / Python Misc
+# ==============================
+instance/
+*.log
+*.pid
+
+# ==============================
+# Distribution / Packaging
+# ==============================
+dist/
+build/
+*.egg-info/
+*.egg

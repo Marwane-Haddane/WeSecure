@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block title %}Log In{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center animate-fade-in-up">
+        <h2 class="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
+            Sign in to your account
+        </h2>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Or <a href="{{ url_for('register') }}"
+                class="font-medium text-cyber-green hover:text-cyber-greenGlow">create a new account</a>
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-up">
+        <div class="cyber-card py-8 px-4 sm:px-10">
+            <form class="space-y-6" action="/login" method="POST">
+
+                <div>
+                    <label for="username" class="cyber-label">Username</label>
+                    <div class="mt-1">
+                        <input id="username" name="username" type="text" autocomplete="username" required
+                            class="cyber-input font-mono text-sm bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 py-2 px-3 resize-none w-full"
+                            placeholder="Enter username">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="cyber-label">Password</label>
+                    <div class="mt-1">
+                        <input id="password" name="password" type="password" autocomplete="current-password" required
+                            class="cyber-input font-mono text-sm bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 py-2 px-3 resize-none w-full"
+                            placeholder="Enter password">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn-primary">
+                        Sign in
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

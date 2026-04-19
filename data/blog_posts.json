@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "title": "Understanding the OWASP Top 10",
+    "date": "2025-10-12",
+    "short_description": "A deep dive into the most critical security risks to web applications.",
+    "content": "<p>The <strong>OWASP Top 10</strong> is a standard awareness document for developers and web application security. It represents a broad consensus about the most critical security risks to web applications. Here are the top three:</p><ol><li><strong>Broken Access Control</strong>: Restrictions on what authenticated users are allowed to do are often not properly enforced.</li><li><strong>Cryptographic Failures</strong>: Sensitive data such as passwords, health records, and personal info require extra protection.</li><li><strong>Injection</strong>: Cross-site scripting and SQL injection are frequent and high-impact risks.</li></ol><p>By understanding these threats, developers can build more secure applications from the ground up.</p>"
+  },
+  {
+    "id": 2,
+    "title": "The Basics of Symmetric Encryption",
+    "date": "2025-11-05",
+    "short_description": "How Fernet and AES protect your data at rest and in transit.",
+    "content": "<p>Symmetric encryption is a type of cryptographic algorithm that uses the same key to encrypt and decrypt data. <strong>Fernet</strong>, a popular standard built around AES, is employed in many modern applications to safely store secrets.</p><h2>How does it work?</h2><ul><li>A key is generated securely.</li><li>The plaintext is transformed into ciphertext using the key.</li><li>The ciphertext can only be reversed back to plaintext by an entity possessing the exact same key.</li></ul><p>Remember: If the key is leaked, all your encrypted data is exposed!</p>"
+  },
+  {
+    "id": 3,
+    "title": "Why Passwords Must Be Hashed",
+    "date": "2026-01-22",
+    "short_description": "Hash algorithms like SHA-256 vs Plaintext.",
+    "content": "<p>Storing passwords in plaintext is one of the most cardinal sins in cybersecurity. If a database is breached, the attacker will have immediate access to all user accounts.</p><p>Instead, passwords must be <strong>hashed</strong>. A good hashing algorithm has these properties:</p><ul><li><strong>Deterministic:</strong> The same password always gives the same hash.</li><li><strong>Irreversible:</strong> It's practically impossible to get the password from the hash.</li><li><strong>Collision Resistant:</strong> It's incredibly unlikely that two different passwords produce the same hash.</li></ul><p>We typically use algorithms like bcrypt or argon2 which also add salt and compute time to slow down brute force attacks.</p>"
+  }
+]
