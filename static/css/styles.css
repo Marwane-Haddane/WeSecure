@@ -1,0 +1,198 @@
+/* Cyber Grid Background */
+.cyber-grid {
+    background-size: 40px 40px;
+    background-image:
+        linear-gradient(to right, rgba(16, 185, 129, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.4) 1px, transparent 1px);
+}
+
+/* Nav Links */
+.nav-link {
+    @apply px-3 py-2 rounded-md font-medium text-gray-700 dark:text-gray-300 hover:text-cyber-green dark:hover:text-cyber-green hover:bg-gray-100 dark:hover:bg-cyber-700/50 transition-colors;
+}
+
+
+
+/* Form Inputs */
+.cyber-input {
+    @apply w-full rounded-xl bg-dark dark:bg-cyber-900 border border-gray-300 dark:border-cyber-border px-4 py-3 text-gray-900 dark:text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyber-green focus:border-transparent transition duration-200;
+}
+
+.cyber-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+}
+
+/* Cards */
+.cyber-card {
+    @apply bg-white dark:bg-cyber-800 shadow-xl overflow-hidden rounded-2xl border border-gray-200 dark:border-cyber-border;
+}
+
+/* Base button */
+.btn-primary {
+    @apply w-full flex justify-center items-center gap-2 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-sm sm:text-base lg:text-lg font-bold uppercase tracking-widest rounded-xl bg-cyber-green text-black hover:bg-cyber-greenGlow hover:text-black hover:-translate-y-1 transition-all duration-300 shadow-[0_0_15px_rgba(16, 185, 129, 0.4)] hover:shadow-[0_0_30px_rgba(16, 185, 129, 0.8)];
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Glowing text highlight */
+.glow-text {
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #10b981;
+}
+
+.nv {
+    text-decoration: none;
+    position: relative;
+    transition: 0.4s;
+    color: inherit;
+}
+
+/* underline effect */
+.nv::before {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 3px;
+    bottom: 0;
+    left: 50%;
+    background-color: #10b981;
+    /* cyber green */
+    transition: all 0.4s ease;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    border-radius: 2px;
+}
+
+/* hover animation */
+.nv:hover::before {
+    width: 100%;
+    left: 0;
+}
+
+/* optional: green hover text glow (matches your theme) */
+.nv:hover {
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+
+
+/* ===== CYBER SELECT SYSTEM ===== */
+
+.cyber-select {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* label reuse */
+.cyber-label {
+    font-size: 12px;
+    color: #9ca3af;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* main button */
+.cyber-select-btn {
+    width: 100%;
+    padding: 12px 14px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border-radius: 12px;
+
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+
+    color: #34d399;
+    font-weight: 600;
+    font-family: monospace;
+
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.cyber-select-btn:hover {
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+}
+
+/* dropdown panel */
+.cyber-options {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    z-index: 50;
+
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 12px;
+
+    overflow: hidden;
+
+    backdrop-filter: blur(10px);
+}
+
+/* option */
+.cyber-option {
+    padding: 10px 14px;
+
+    color: #34d399;
+    font-family: monospace;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.cyber-option:hover {
+    background: rgba(16, 185, 129, 0.15);
+    color: #a7f3d0;
+}
+
+/* arrow */
+.cyber-arrow {
+    color: #10b981;
+    font-size: 14px;
+}

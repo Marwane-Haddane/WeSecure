@@ -1,0 +1,1185 @@
+{
+  "name": "Web security scanner for OWASP compliance with Markdown reports",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "",
+        "height": 208,
+        "color": 7
+      },
+      "id": "f4859d09-2488-43e7-8308-c9f78698c280",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3504,
+        1184
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## n8n OWASP Security Misconfiguration Scanner\n\n## How it works\nThis workflow performs a non-intrusive security audit of any public URL (typically a login or API endpoint). It sends a few safe and ethical HTTP requests and analyzes:\n• Missing or weak security headers (HSTS, CSP, etc.)\n• Dangerous HTTP methods & CORS misconfiguration\n• Cookie security flags (Secure, HttpOnly, SameSite)\n• HTTPS enforcement and redirect behavior\n• CORS preflight origin reflection\nResults are compiled into a Markdown report and optionally emailed.\n\n## Setup steps\n\nStep 1.  Connect your Gmail credentials in the last node to auto-email the report\nStep 2. Click Execute the workflow, or the 'Landing Page URL' and enter a URL + mail in the new window, then click 'submit'.\n\n*You can alternatively download or receive the Markdown report directly from the Markdown to File node* ",
+        "height": 596,
+        "width": 420
+      },
+      "id": "3e83f73f-29d4-4cd7-94c8-23e55794fba0",
+      "name": "📋 Web Security Quick Scan – README1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        64,
+        416
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('When Executed by Another Workflow').item.json.mail }}",
+        "subject": "=WeSecure Security Analysis Report  {{ $('When Executed by Another Workflow').item.json.date }}",
+        "message": "=<div style=\"background:linear-gradient(90deg,#020617,#020617); color:#22c55e; padding:25px; text-align:center;\">\n      <h2 style=\"margin:0; letter-spacing:1px; color:#006a48;\" >WeSecure Report</h2>\n      <p style=\"margin:6px 0 0; font-size:13px; color:#94a3b8;\">\n        Cybersecurity Analysis Summary\n      </p>\n    </div>\n<div style=\"padding:22px; color:#1e293b; font-size:14px; line-height:1.7; background:#006a48\">\n      <div style=\"color:#000000\">\n      <p ><b>Hello,<b></p>\n\n      <p><b>\n        Your security analysis has been successfully completed.\n        Please find your full report attached as a PDF document.\n        </b>      \n</p>\n\n      <p>\n        Below is a summary of the detected issues:\n      </p>\n      </div>\n</div>\n{{ $('AI Agent').item.json.output.replace(/```html\\n/g, '').replace(/```/g, '').trim() }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "attachment_owasp"
+              },
+              {
+                "property": "attachment_phishing"
+              }
+            ]
+          }
+        }
+      },
+      "id": "4c913977-0026-4ffa-9d4e-a7591b147476",
+      "name": "Send a message4",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        3568,
+        1232
+      ],
+      "webhookId": "3a47e348-5245-470e-8129-f3194d292fee",
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ULJIWcmgOiIWfuqh",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "7e594650-70d2-4426-99c0-5a957ea96cae",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1296,
+        912
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────\n// OWASP Security Headers + CSP + Cache (n8n Safe)\n// ─────────────────────────────────────────────────────────────────────\nfunction getHeader(headers, name) {\n if (!headers) return undefined;\n const key = Object.keys(headers).find(k => k.toLowerCase() === name.toLowerCase());\n if (!key) return undefined;\n const val = headers[key];\n return Array.isArray(val) ? val[0] : val;\n}\n\ntry {\n const item = $input.item.json;\n const headers = item.headers || {};\n const config = $('Configuration').item.json;\n const opts = config.cookieConfig || {};\n const scanId = config.scanId;\n\n const findings = {\n scanId: config.scanId,\n test: 'Security Headers',\n endpoint: config.endpoint,\n url: config.targetUrl + config.endpoint,\n timestamp: new Date().toISOString(),\n statusCode: item.statusCode,\n issues: [],\n passed: []\n };\n\n // ───── REQUIRED HEADERS (OWASP) ─────\n const required = {\n 'strict-transport-security': { sev: 'HIGH', msg: 'Missing HSTS', rem: 'Add HSTS with max-age ≥ 31536000' },\n 'x-content-type-options': { sev: 'MEDIUM', msg: 'Missing X-Content-Type-Options', rem: 'Add nosniff' },\n 'x-frame-options': { sev: 'HIGH', msg: 'Missing X-Frame-Options', rem: 'Add DENY or SAMEORIGIN' },\n 'content-security-policy': { sev: 'MEDIUM', msg: 'Missing CSP', rem: 'Implement strong CSP' },\n 'referrer-policy': { sev: 'LOW', msg: 'Missing Referrer-Policy', rem: 'Add strict-origin-when-cross-origin' },\n 'permissions-policy': { sev: 'LOW', msg: 'Missing Permissions-Policy', rem: 'Restrict features like camera, geolocation' }\n };\n\n for (const [h, c] of Object.entries(required)) {\n const val = getHeader(headers, h);\n if (!val) {\n findings.issues.push({ severity: c.sev, type: 'Missing Header', detail: c.msg, remediation: c.rem });\n } else {\n findings.passed.push(`${h} present`);\n }\n }\n\n // ───── CSP STRENGTH (if present) ─────\n const csp = getHeader(headers, 'content-security-policy');\n if (csp) {\n const hasUnsafe = /('unsafe-inline'|'unsafe-eval')/i.test(csp);\n const hasDefaultSrc = /default-src/i.test(csp);\n const hasScriptSrc = /script-src/i.test(csp);\n const hasObjectSrc = /object-src/i.test(csp);\n\n if (hasUnsafe && !hasScriptSrc) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Weak CSP',\n detail: `'unsafe-inline' or 'unsafe-eval' without script-src`,\n remediation: 'Avoid unsafe-inline/eval; use nonce or hash'\n });\n }\n if (!hasDefaultSrc) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'CSP Missing default-src',\n detail: 'No fallback policy',\n remediation: 'Add default-src \\'self\\''\n });\n }\n if (!hasObjectSrc || !/object-src\\s+['\"]?none['\"]?/i.test(csp)) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'CSP Allows Plugins',\n detail: 'object-src not set to \\'none\\'',\n remediation: 'Add object-src \\'none\\''\n });\n }\n }\n\n // ───── CACHE CONTROL (Critical for APIs) ─────\n const cacheControl = getHeader(headers, 'cache-control');\n const pragma = getHeader(headers, 'pragma');\n const expires = getHeader(headers, 'expires');\n\n const isApi = config.endpoint.includes('/api/') || config.endpoint.includes('/v');\n if (isApi || config.endpoint.includes('login') || config.endpoint.includes('auth')) {\n if (!cacheControl || !/(no-store|no-cache)/i.test(cacheControl)) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Cacheable Sensitive Data',\n detail: `Cache-Control missing no-store/no-cache`,\n remediation: 'Add Cache-Control: no-store, no-cache, must-revalidate'\n });\n }\n }\n\n // ───── INFO DISCLOSURE ─────\n const disclosure = ['server', 'x-powered-by', 'x-aspnet-version', 'x-aspnetmvc-version'];\n for (const h of disclosure) {\n const val = getHeader(headers, h);\n if (val) {\n findings.issues.push({\n severity: 'LOW',\n type: 'Information Disclosure',\n detail: `${h}: ${val}`,\n remediation: `Remove ${h} header`\n });\n }\n }\n\n // ───── DEPRECATED BUT COMMON ─────\n const xss = getHeader(headers, 'x-xss-protection');\n if (xss && xss !== '0' && !xss.includes('1; mode=block')) {\n findings.issues.push({\n severity: 'LOW',\n type: 'Weak XSS Protection',\n detail: `X-XSS-Protection should be '1; mode=block'`,\n remediation: 'Use CSP instead; remove if not needed'\n });\n }\n\n return { json: findings };\n\n} catch (err) {\n return { json: { test: 'Security Headers', error: err.message, timestamp: new Date().toISOString() } };\n}"
+      },
+      "id": "5732a379-88be-4fb0-8308-5cd74c33b6af",
+      "name": "Analyze Headers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        576
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.targetUrl }}{{ $json.endpoint }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "24be4513-30d5-4033-94bf-62065550c299",
+      "name": "Test Security Headers",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        576
+      ],
+      "typeVersion": 4.1,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "targetUrl",
+              "stringValue": "={{ $json.website }}"
+            },
+            {
+              "name": "endpoint",
+              "stringValue": "=/login"
+            },
+            {
+              "name": "scanId",
+              "stringValue": "={{ $now.format('yyyy-MM-dd_HHmmss') }}"
+            },
+            {
+              "name": "cookieConfig"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "53a52db9-2624-42cb-93cc-6ba7786fc9c1",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        624,
+        912
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "method": "OPTIONS",
+        "url": "={{ $json.targetUrl }}{{ $json.endpoint }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "82da5c14-279b-45d3-a4c3-3e454df43ef6",
+      "name": "Test HTTP Methods",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        768
+      ],
+      "typeVersion": 4.1,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "function getHeader(headers, name) {\n if (!headers) return undefined;\n const key = Object.keys(headers).find(k => k.toLowerCase() === name.toLowerCase());\n if (!key) return undefined;\n const val = headers[key];\n return Array.isArray(val) ? val[0] : val;\n}\n\ntry {\n const item = $input.item.json;\n const headers = item.headers || {};\n const config = $('Configuration').item.json;\n const opts = config.cookieConfig || {};\n const scanId = config.scanId;\n\n const findings = {\n scanId: config.scanId,\n test: 'HTTP Methods & CORS',\n endpoint: config.endpoint,\n url: config.targetUrl + config.endpoint,\n timestamp: new Date().toISOString(),\n statusCode: item.statusCode,\n issues: [],\n passed: []\n };\n\n const allow = (getHeader(headers, 'allow') || '').toUpperCase();\n const dangerous = ['TRACE', 'TRACK', 'DELETE', 'PUT'];\n \n let foundDangerous = false;\n for (const method of dangerous) {\n if (allow.includes(method)) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Unnecessary HTTP Method',\n detail: `${method} method enabled`,\n remediation: `Disable ${method} method`\n });\n foundDangerous = true;\n }\n }\n \n if (!foundDangerous) {\n findings.passed.push('No dangerous HTTP methods found');\n }\n\n const origin = getHeader(headers, 'access-control-allow-origin');\n if (origin === '*') {\n findings.issues.push({\n severity: 'HIGH',\n type: 'CORS Misconfiguration',\n detail: 'Wildcard origin allowed',\n remediation: 'Specify exact origins'\n });\n } else if (origin) {\n findings.passed.push('CORS properly configured');\n }\n\n return { json: findings };\n} catch (error) {\n return { json: { test: 'HTTP Methods & CORS', error: error.message, timestamp: new Date().toISOString() } };\n}"
+      },
+      "id": "bbd3e2aa-6d79-4eab-8a02-04c2958c6aa2",
+      "name": "Analyze Methods",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        768
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.targetUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "423ae2a5-1f98-4a75-973d-bb96a273a67f",
+      "name": "Test Cookies",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        960
+      ],
+      "typeVersion": 4.1,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────\n// Cookie Security (NO MODULES – n8n Safe)\n// ─────────────────────────────────────────────────────────────────────\nfunction getHeader(headers, name) {\n if (!headers) return [];\n const key = Object.keys(headers).find(k => k.toLowerCase() === name.toLowerCase());\n if (!key) return [];\n const val = headers[key];\n return Array.isArray(val) ? val : (val ? [val] : []);\n}\n\n// Case-insensitive directive check\nconst hasDirective = (str, dir) => new RegExp(`\\\\b${dir}\\\\b`, 'i').test(str);\n\n// Simple cookie parser (handles name=value; Path=/; Secure; HttpOnly; etc.)\nfunction parseCookie(raw) {\n const parts = raw.split(';').map(p => p.trim());\n const [nameVal, ...attrs] = parts;\n const eqIndex = nameVal.indexOf('=');\n if (eqIndex === -1) return null;\n\n const name = nameVal.slice(0, eqIndex).trim();\n const value = nameVal.slice(eqIndex + 1).trim();\n\n const parsed = { name, value };\n for (const attr of attrs) {\n if (!attr) continue;\n const [k, v] = attr.split('=').map(s => s.trim());\n parsed[k] = v || true;\n }\n return parsed;\n}\n\ntry {\n const item = $input.item.json;\n const headers = item.headers || {};\n const config = $('Configuration').item.json;\n const scanId = config.scanId;\n\n // ───── CONFIG OPTIONS ─────\n const opts = {\n checkHostPrefix: config.checkHostPrefix !== false,\n checkSecurePrefix: config.checkSecurePrefix !== false,\n checkSameSiteNoneRequiresSecure: config.checkSameSiteNoneRequiresSecure !== false,\n checkExpiration: config.checkExpiration !== false,\n checkPartitioned: config.checkPartitioned !== false,\n debug: config.debug === true\n };\n\n const findings = {\n scanId: config.scanId,\n test: 'Cookie Security',\n endpoint: config.endpoint || '/',\n url: config.targetUrl,\n timestamp: new Date().toISOString(),\n statusCode: item.statusCode ?? null,\n issues: [],\n passed: [],\n info: []\n };\n\n const rawCookies = getHeader(headers, 'set-cookie');\n findings.info.push(`Found ${rawCookies.length} Set-Cookie(s)`);\n\n if (rawCookies.length === 0) {\n findings.info.push('No cookies set – normal if no auth');\n return { json: findings };\n }\n\n for (const raw of rawCookies) {\n if (typeof raw !== 'string') continue;\n\n const parsed = parseCookie(raw);\n if (!parsed) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Malformed Cookie',\n detail: `Invalid syntax: ${raw.substring(0, 50)}...`,\n remediation: 'Fix Set-Cookie format'\n });\n continue;\n }\n\n const { name } = parsed;\n let secure = true;\n\n // ───── 1. Core Flags ─────\n if (!parsed.HttpOnly) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Missing HttpOnly',\n detail: `Cookie '${name}' missing HttpOnly`,\n remediation: 'Add HttpOnly'\n });\n secure = false;\n }\n\n if (!parsed.Secure) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Missing Secure',\n detail: `Cookie '${name}' missing Secure`,\n remediation: 'Add Secure flag'\n });\n secure = false;\n }\n\n // ───── 2. SameSite ─────\n const sameSite = (parsed.SameSite || '').toLowerCase();\n if (!sameSite) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Missing SameSite',\n detail: `Cookie '${name}' missing SameSite`,\n remediation: 'Add SameSite=Strict or Lax'\n });\n secure = false;\n } else if (sameSite === 'none' && opts.checkSameSiteNoneRequiresSecure && !parsed.Secure) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'SameSite=None Without Secure',\n detail: `Cookie '${name}' uses SameSite=None without Secure`,\n remediation: 'SameSite=None REQUIRES Secure'\n });\n secure = false;\n } else {\n findings.passed.push(`Cookie '${name}' uses SameSite=${parsed.SameSite}`);\n }\n\n // ───── 3. __Host- / __Secure- Prefix ─────\n if (name.startsWith('__Host-') && opts.checkHostPrefix) {\n const valid = parsed.Secure && parsed.Path === '/' && !parsed.Domain;\n if (!valid) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Invalid __Host-',\n detail: `Cookie '${name}' violates __Host- rules`,\n remediation: 'Must have: Secure, Path=/, no Domain'\n });\n secure = false;\n } else {\n findings.passed.push(`Cookie '${name}' uses valid __Host- prefix`);\n }\n }\n\n if (name.startsWith('__Secure-') && opts.checkSecurePrefix) {\n if (!parsed.Secure) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Invalid __Secure-',\n detail: `Cookie '${name}' missing Secure for __Secure- prefix`,\n remediation: 'Add Secure'\n });\n secure = false;\n } else {\n findings.passed.push(`Cookie '${name}' uses valid __Secure- prefix`);\n }\n }\n\n // ───── 4. Expiration ─────\n if (opts.checkExpiration) {\n const expires = parsed.Expires ? new Date(parsed.Expires) : null;\n const maxAge = parsed.MaxAge ? parseInt(parsed.MaxAge, 10) : null;\n\n if (expires && expires < new Date()) {\n findings.issues.push({\n severity: 'LOW',\n type: 'Expired Cookie',\n detail: `Cookie '${name}' has expired`,\n remediation: 'Remove expired cookie'\n });\n } else if (maxAge && maxAge > 31536000) {\n findings.issues.push({\n severity: 'LOW',\n type: 'Long-Lived Cookie',\n detail: `Cookie '${name}' lives >1 year`,\n remediation: 'Shorten Max-Age'\n });\n }\n }\n\n // ───── 5. CHIPS (Partitioned) ─────\n if (opts.checkPartitioned && parsed.Partitioned) {\n if (!parsed.Secure) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Partitioned Without Secure',\n detail: `Partitioned cookie '${name}' missing Secure`,\n remediation: 'Partitioned requires Secure'\n });\n } else {\n findings.passed.push(`Cookie '${name}' uses Partitioned (CHIPS)`);\n }\n }\n\n // ───── Final Pass ─────\n if (secure) {\n findings.passed.push(`Cookie '${name}' is fully secure`);\n }\n }\n\n // ───── Summary ─────\n findings.info.push(`Passed: ${findings.passed.length}, Issues: ${findings.issues.length}`);\n if (findings.issues.length === 0) findings.info.push('All cookies secure');\n\n if (opts.debug) console.log('Cookie Debug:', findings);\n\n return { json: findings };\n\n} catch (err) {\n return {\n json: {\n test: 'Cookie Security',\n error: err.message,\n timestamp: new Date().toISOString()\n }\n };\n}"
+      },
+      "id": "8a946c76-f12b-438c-8c3e-95e5fd7ef6a6",
+      "name": "Analyze Cookies",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        960
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.targetUrl.replace(/^https:/i, 'http:') + $json.endpoint }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "594e46d4-a193-4ab6-af61-b2545f6a4499",
+      "name": "Test HTTPS Redirect",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        1152
+      ],
+      "typeVersion": 4.1,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────\n// HTTPS + HSTS + TLS ENFORCEMENT (n8n Safe)\n// ─────────────────────────────────────────────────────────────────────\nfunction getHeader(headers, name) {\n if (!headers) return undefined;\n const key = Object.keys(headers).find(k => k.toLowerCase() === name.toLowerCase());\n if (!key) return undefined;\n const val = headers[key];\n return Array.isArray(val) ? val[0] : val;\n}\n\ntry {\n const item = $input.item.json;\n const headers = item.headers || {};\n const config = $('Configuration').item.json;\n const opts = config.cookieConfig || {};\n const scanId = config.scanId;\n\n const requestedUrl = item.requestOptions?.url || \n config.targetUrl.replace(/^https:/i, 'http:') + config.endpoint;\n const expectedHttpsUrl = config.targetUrl + config.endpoint;\n\n const findings = {\n scanId: config.scanId,\n test: 'HTTPS Enforcement',\n endpoint: config.endpoint,\n url: requestedUrl,\n httpsUrl: expectedHttpsUrl,\n timestamp: new Date().toISOString(),\n statusCode: item.statusCode ?? null,\n issues: [],\n passed: [],\n info: []\n };\n\n // ───── 1. Redirect Enforcement (301/302/307/308) ─────\n if ([301, 302, 307, 308].includes(item.statusCode)) {\n const location = getHeader(headers, 'location');\n if (location) {\n if (!/^https:\\/\\//i.test(location)) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Insecure Redirect',\n detail: `Redirects to HTTP: ${location}`,\n remediation: 'Force HTTP → HTTPS redirect'\n });\n } else {\n findings.passed.push('HTTP properly redirects to HTTPS');\n }\n } else {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Missing Location',\n detail: 'Redirect without Location header',\n remediation: 'Include valid Location'\n });\n }\n }\n\n // ───── 2. No Redirect + HTTP 200 = CRITICAL ─────\n else if (item.statusCode === 200) {\n findings.issues.push({\n severity: 'CRITICAL',\n type: 'HTTP Served',\n detail: 'Site allows plain HTTP access',\n remediation: 'Block port 80, enforce HTTPS'\n });\n }\n\n // ───── 3. HSTS Check (only on HTTPS response or redirect target) ─────\n const hsts = getHeader(headers, 'strict-transport-security');\n if (hsts) {\n const maxAgeMatch = hsts.match(/max-age\\s*=\\s*(\\d+)/i);\n const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) : 0;\n\n if (maxAge < 31536000) { // < 1 year\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Weak HSTS',\n detail: `HSTS max-age too low: ${maxAge} seconds`,\n remediation: 'Set max-age ≥ 31536000 (1 year)'\n });\n } else {\n findings.passed.push(`HSTS enabled (max-age: ${maxAge})`);\n }\n\n if (!hsts.includes('includeSubDomains')) {\n findings.issues.push({\n severity: 'LOW',\n type: 'HSTS Missing Subdomains',\n detail: 'HSTS does not include subdomains',\n remediation: 'Add includeSubDomains'\n });\n } else {\n findings.passed.push('HSTS includes subdomains');\n }\n\n if (!hsts.includes('preload')) {\n findings.info.push('HSTS not preload-ready');\n } else {\n findings.passed.push('HSTS preload-ready');\n }\n } else if (item.statusCode >= 200 && item.statusCode < 400) {\n findings.issues.push({\n severity: 'HIGH',\n type: 'Missing HSTS',\n detail: 'No Strict-Transport-Security header',\n remediation: 'Add HSTS with max-age ≥ 31536000'\n });\n }\n\n // ───── 4. TLS Version (via header or request) ─────\n const tlsVersion = item.tls?.version || getHeader(headers, 'strict-transport-security')?.match(/TLS [0-9.]+/i);\n if (tlsVersion && !tlsVersion.toString().includes('1.3') && !tlsVersion.toString().includes('1.2')) {\n findings.issues.push({\n severity: 'MEDIUM',\n type: 'Outdated TLS',\n detail: `Using weak TLS: ${tlsVersion}`,\n remediation: 'Upgrade to TLS 1.2 or 1.3'\n });\n } else if (tlsVersion) {\n findings.passed.push(`Secure TLS: ${tlsVersion}`);\n }\n\n // ───── 5. Summary ─────\n findings.info.push(`Status: ${item.statusCode}`);\n if (findings.issues.length === 0) {\n findings.info.push('HTTPS fully enforced');\n }\n\n return { json: findings };\n\n} catch (err) {\n return {\n json: {\n test: 'HTTPS Enforcement',\n error: err.message,\n timestamp: new Date().toISOString()\n }\n };\n}"
+      },
+      "id": "1e64945d-f02c-4a68-98e1-a7f575b9e351",
+      "name": "Analyze HTTPS",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        1152
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "OPTIONS",
+        "url": "={{ $json.targetUrl }}{{ $json.endpoint }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Origin",
+              "value": "https://evil.com"
+            },
+            {
+              "name": "Access-Control-Request-Method",
+              "value": "POST"
+            },
+            {
+              "name": "Access-Control-Request-Headers",
+              "value": "X-Custom, Authorization"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "e32aae2b-6174-4447-9109-3c66e3835980",
+      "name": "Test CORS Preflight",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        1344
+      ],
+      "retryOnFail": true,
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyze CORS Preflight (add this as new Code node)\nfunction getHeader(h, n) {\n if (!h) return undefined;\n const k = Object.keys(h).find(x => x.toLowerCase() === n.toLowerCase());\n return k ? h[k] : undefined;\n}\n\ntry {\n const item = $input.item.json;\n const headers = item.headers || {};\n const config = $('Configuration').item.json;\n const opts = config.cookieConfig || {};\n const scanId = config.scanId;\n\n const findings = {\n scanId: config.scanId,\n test: 'CORS Preflight',\n endpoint: config.endpoint,\n url: config.targetUrl + config.endpoint,\n timestamp: new Date().toISOString(),\n statusCode: item.statusCode,\n issues: [],\n passed: []\n };\n\n const acao = getHeader(headers, 'access-control-allow-origin');\n const acac = getHeader(headers, 'access-control-allow-credentials');\n\n // DANGER: Reflects any origin\n if (acao === 'https://evil.com') {\n findings.issues.push({\n severity: 'CRITICAL',\n type: 'CORS Origin Reflection',\n detail: 'Server reflects Origin header (open redirect risk)',\n remediation: 'Hardcode allowed origins, never reflect'\n });\n }\n\n // DANGER: Wildcard with credentials\n if (acao === '*' && acac === 'true') {\n findings.issues.push({\n severity: 'CRITICAL',\n type: 'CORS Wildcard + Credentials',\n detail: 'Allows any origin with credentials',\n remediation: 'Never combine * with credentials'\n });\n }\n\n // GOOD: Specific origin\n if (acao && acao !== '*' && !acao.includes('evil.com')) {\n findings.passed.push(`CORS restricted to: ${acao}`);\n }\n\n return { json: findings };\n\n} catch (err) {\n return { json: { test: 'CORS Preflight', error: err.message } };\n}"
+      },
+      "id": "89aa78bc-cf28-4727-b6cc-bf52d854a76f",
+      "name": "Analyze CORS Preflight",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        1344
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n const allFindings = [];\n const erroredTests = [];\n const allPassed = [];\n const summary = {\n scanId: $('Configuration').item.json.scanId,\n targetUrl: $('Configuration').item.json.targetUrl,\n endpoint: $('Configuration').item.json.endpoint,\n scanDate: new Date().toISOString(),\n totalIssues: 0,\n critical: 0,\n high: 0,\n medium: 0,\n low: 0,\n testsConducted: [],\n totalPassed: 0\n };\n\n for (const item of $input.all()) {\n const data = item.json;\n \n if (data.error) {\n erroredTests.push({ test: data.test, error: data.error });\n summary.testsConducted.push(data.test + ' (ERROR)');\n continue;\n }\n \n if (data.test) {\n summary.testsConducted.push(data.test);\n }\n \n if (data.passed && data.passed.length > 0) {\n allPassed.push(...data.passed.map(p => ({ test: data.test, check: p })));\n summary.totalPassed += data.passed.length;\n }\n \n if (data.issues && data.issues.length > 0) {\n for (const issue of data.issues) {\n summary.totalIssues++;\n allFindings.push({\n test: data.test,\n endpoint: data.endpoint,\n url: data.url,\n statusCode: data.statusCode,\n ...issue\n });\n \n if (issue.severity === 'CRITICAL') summary.critical++;\n else if (issue.severity === 'HIGH') summary.high++;\n else if (issue.severity === 'MEDIUM') summary.medium++;\n else if (issue.severity === 'LOW') summary.low++;\n }\n }\n }\n\n const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };\n allFindings.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);\n\n return [{ json: { summary, findings: allFindings, passed: allPassed, errors: erroredTests } }];\n} catch (error) {\n return [{ json: { error: 'Report generation failed', message: error.message } }];\n}"
+      },
+      "id": "75aff750-fc13-429e-a8be-f77bb71db43b",
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1520,
+        960
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.summary.totalIssues }}",
+              "value2": 0,
+              "operation": "larger"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eb8de8b5-fa24-4703-8f5d-e983acf3b67c",
+      "name": "Issues Found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1744,
+        960
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4f9d04d3-724e-4b54-b161-42d9856f6a02",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1968,
+        864
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst findings = data.findings || [];\nconst critical = findings.filter(f => f.severity === 'CRITICAL');\nconst high = findings.filter(f => f.severity === 'HIGH');\n\nconst markdown = [\n '# Security Scan Report - TOP ISSUES',\n '',\n '## Critical & High Priority',\n ...critical.slice(0, 3).map(f => '### [CRITICAL] ' + f.type + '\\n' + f.detail + '\\n**Fix:** ' + f.remediation),\n ...high.slice(0, 3).map(f => '### [HIGH] ' + f.type + '\\n' + f.detail + '\\n**Fix:** ' + f.remediation),\n '',\n '## All Findings',\n ...findings.map(f => '- **' + f.severity + '** [' + f.test + '] ' + f.type + ': ' + f.detail),\n '',\n '**Scan ID:** ' + data.summary.scanId,\n '**Date:** ' + data.summary.scanDate\n].join('\\n');\n\nreturn [{ json: { ...data, markdown: markdown } }];"
+      },
+      "id": "0b00ff9e-efd6-43dc-b929-63b445a774c0",
+      "name": "Create Markdown Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2256,
+        864
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "html",
+        "binaryPropertyName": "={{ $json.summary }}",
+        "options": {}
+      },
+      "id": "5120cd78-07be-4de6-9b38-16af106bd5c2",
+      "name": "Markdown to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        2544,
+        864
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "95b112cc-c080-4b4e-bf52-c370f769b20c",
+      "name": "Format Success",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1968,
+        1280
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "content": "## Misconfiguration Scanner Nodes\n",
+        "height": 1024,
+        "width": 512,
+        "color": 7
+      },
+      "id": "11e89e60-7579-40c8-8651-c266ae1054e7",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        752,
+        480
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Reporting Nodes\n**Double Click** To view 'Markdown to File' node for a report if Gmail is not configured.",
+        "height": 240,
+        "width": 640,
+        "color": 7
+      },
+      "id": "b3c44d43-fd67-416e-b6b9-6d1f31833ad7",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1984,
+        784
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional report editor.\n\nImprove the following markdown report:\nDo NOT include internal reasoning or thinking.\n{{ $('Create Markdown Report').item.json.markdown }}\n\n\n- Fix formatting to html\n- Make it more readable\n- Add headings and structure\n- Improve clarity and tone\n- Keep it concise but professional\n\nReturn the final version in clean HTML\n\nReturn ONLY the final HTML.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2768,
+        864
+      ],
+      "id": "d406fadf-68e5-4385-91f0-0df54c386dd8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2848,
+        1088
+      ],
+      "id": "c81bcc7a-eeaa-4c65-ad7b-98cbfeb2696c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "MNJKw27nuAoSYCgx",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"website\": \"a string\",\n  \"mail\": \"a string\",\n  \"date\": null\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        1520
+      ],
+      "id": "24cbe669-4d17-4c48-9165-e5d2876bd165",
+      "name": "When Executed by Another Workflow",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.urlScanIo",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        1488
+      ],
+      "id": "6e53dd65-353a-40fd-9057-40f8e719bee8",
+      "name": "Perform a scan",
+      "credentials": {
+        "urlScanIoApi": {
+          "id": "QXyu1JPAlNqKuAKG",
+          "name": "urlscan.io account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Phishing scaning\n",
+        "height": 240,
+        "width": 1776,
+        "color": 7
+      },
+      "id": "86b73774-e5ee-414d-8181-2516ce8fb5ea",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1280,
+        1424
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "scanId": "={{ $json.scanId }}"
+      },
+      "type": "n8n-nodes-base.urlScanIo",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        1488
+      ],
+      "id": "063c1789-c91b-4567-9eec-3c9f33d5f543",
+      "name": "Get a scan",
+      "credentials": {
+        "urlScanIoApi": {
+          "id": "QXyu1JPAlNqKuAKG",
+          "name": "urlscan.io account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        1488
+      ],
+      "id": "31342e04-42a9-44d7-b5f8-b5e30e126877",
+      "name": "Wait",
+      "webhookId": "0986207d-0533-4279-8ed8-913ff569b067"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.all()[0];\n\n// FIX: Just look directly at the root of the JSON item\nconst data = item.json;\n\n// Extract the key fields you care about for the AI report\nconst summary = {\n  // --- Target & Network Info ---\n  url: data.page?.url || \"N/A\",\n  domain: data.page?.domain || \"N/A\",\n  apex_domain: data.page?.apexDomain || \"N/A\",\n  ip: data.page?.ip || \"N/A\",\n  asn: data.page?.asn || \"N/A\",\n  country: data.page?.country || \"N/A\",\n  server: data.page?.server || \"N/A\",\n  tls_valid: data.page?.tlsValid ?? \"N/A\",\n\n  // --- Scan Task Info ---\n  scan_time: data.task?.time || \"N/A\",\n  visibility: data.task?.visibility || \"N/A\",\n  result_link: data.task?.reportURL || \"N/A\",\n  screenshot_link: data.task?.screenshotURL || \"N/A\",\n\n  // --- Security Verdicts & Scoring ---\n  malicious: data.verdicts?.overall?.malicious || false,\n  score: data.verdicts?.overall?.score || 0,\n  categories: data.verdicts?.overall?.categories || [],\n  tags: data.verdicts?.overall?.tags || [],\n  brands: data.verdicts?.overall?.brands || [],\n  engines_malicious_total: data.verdicts?.engines?.maliciousTotal || 0,\n  engines_total: data.verdicts?.engines?.enginesTotal || 0,\n\n  // --- Scan Statistics ---\n  total_requests: data.stats?.requests || 0,\n  total_ips: data.stats?.ips || 0,\n  total_domains: data.stats?.domains || 0,\n\n  // --- Associated Lists (Truncated to top 10 to save AI token context) ---\n  contacted_countries: data.lists?.countries || [],\n  contacted_domains: data.lists?.domains?.slice(0, 10) || [],\n  contacted_ips: data.lists?.ips?.slice(0, 10) || []\n};\n\nreturn { json: summary };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        1488
+      ],
+      "id": "c035ceae-95d2-4995-8053-f1ab86ba3d9e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Cybersecurity Analyst and Threat Intelligence Specialist. Your task is to analyze a JSON summary from an automated urlscan.io security scan and generate a clear, professional, and human-readable security report.\nDO NOT use any Markdown formatting, bold text, or headers. Output only plain text\n\nHere is the raw scan data for context:\n- URL Scanned: {{ $json.url }}\n- Domain: {{ $json.domain }}\n- IP Address: {{ $json.ip }}\n- ASN: {{ $json.asn }}\n- Server Location (Country): {{ $json.country }}\n- Server Infrastructure: {{ $json.server }}\n\nSecurity Verdicts:\n- Is Malicious: {{ $json.malicious }}\n- Threat Score: {{ $json.score }}/100\n- Total Engines that flagged as malicious: {{ $json.engines_malicious_total }} out of {{ $json.engines_total }}\n\nBehavior & Background Network Activity:\n- Contacted Countries: {{ $json.contacted_countries.join(', ') }}\n- Contacted Domains: {{ $json.contacted_domains.join(', ') }}\n- Categories: {{ $json.categories.length > 0 ? $json.categories.join(', ') : 'None' }}\n- Tags: {{ $json.tags.length > 0 ? $json.tags.join(', ') : 'None' }}\n\nReferences:\n- Scan Time: {{ $json.scan_time }}\n- Full Report Link: {{ $json.result_link }}\n- Screenshot Link: {{ $json.screenshot_link }}\n\nBased on the data above, please format your response EXACTLY like this:\n\n### 🛡️ Automated Security Scan Report: {{ $json.domain }}\n\n**1. Executive Summary**\n- **Verdict:** [State SAFE, SUSPICIOUS, or MALICIOUS based on the boolean and score]\n- **Threat Score:** {{ $json.score }}/100\n- **Summary:** [Write 2-3 sentences summarizing the overall safety of the site based on the data provided.]\n\n**2. Target Information**\n- **Scanned URL:** {{ $json.url }}\n- **Primary IP & Location:** {{ $json.ip }} hosted in {{ $json.country }}\n- **Server/Infrastructure:** {{ $json.server }} ({{ $json.asn }})\n\n**3. Security & Threat Analysis**\n- **Malicious Flags:** [Explain the engine flags. If 0, state \"Clean across all engines\".]\n- **Categories/Tags:** [List the categories and tags. If none, state \"None detected\".]\n\n**4. Network & Behavioral Analysis**\n- **Background Activity:** [Explain what the website is doing in the background based on the Contacted Domains. E.g., loading assets, analytics, or potentially malicious connections.]\n- **Global Footprint:** [List the Contacted Countries and explain if this routing is normal (like CDNs) or suspicious.]\n\n**5. Additional Details**\n- **Scan Time:** {{ $json.scan_time }}\n- **Full Report:** {{ $json.result_link }}\n- **Visual Proof:** {{ $json.screenshot_link }}\n\n**6.DO NOT use any Markdown formatting, bold text, or headers. Output only plain text",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2192,
+        1488
+      ],
+      "id": "52ba2e22-88f7-433a-ab3c-dee1c9bbf5c3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2272,
+        1712
+      ],
+      "id": "d0dd9f43-676a-4e94-b8e5-5c4436508a7c",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "MNJKw27nuAoSYCgx",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.all()[0];\n// Accommodate your current field name (whether it's 'output' or 'clean_report')\nlet reportData = item.json.output || item.json.clean_report;\n\n// 1. Remove the <think>...</think> block\nreportData = reportData.replace(/<think>[\\s\\S]*?<\\/think>\\n*/g, '').trim();\n\n// 2. Remove Markdown bold (**) and headers (###)\nreportData = reportData.replace(/\\*\\*/g, ''); // Removes all **\nreportData = reportData.replace(/### /g, ''); // Removes ### \nreportData = reportData.replace(/## /g, '');  // Removes ##\nreportData = reportData.replace(/#/g, '');    // Removes any leftover #\n\nreturn { json: { plain_text_report: reportData } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        1488
+      ],
+      "id": "161a8eba-9fe8-41b8-b51c-f71edebe17c0",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Document Formatter. Your ONLY job is to take the provided text and redesign it into a formal html with a good styling for colors\n\nRules:\n\nDO NOT change any of the facts, scores, or links provided in the original text.\n\nDO NOT output any conversational text like 'Here is your format'.\n\nOutput ONLY the final designed format \n\ndon't use \\n to return to line or ** for bold \n\n{{ $json.plain_text_report }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2784,
+        1472
+      ],
+      "id": "2baeb5ee-cf4a-4043-bd6f-2ccee69339ef",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2848,
+        1712
+      ],
+      "id": "bdf008d3-650b-41bc-87fd-6868a947e15a",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "MNJKw27nuAoSYCgx",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.html2pdf.app/v1/generate",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "C434KuGMm1dCTCXcjJ1K67BgVimRw26Qq87Ok9OOALRkvjIi7dZyM60jjxVRb45E"
+            },
+            {
+              "name": "html",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "attachment_phishing"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3120,
+        1488
+      ],
+      "id": "44bbea15-8420-493b-a5b3-b62496f3ffcd",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.html2pdf.app/v1/generate",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "C434KuGMm1dCTCXcjJ1K67BgVimRw26Qq87Ok9OOALRkvjIi7dZyM60jjxVRb45E"
+            },
+            {
+              "name": "html",
+              "value": "={{ $json.output.replace(/```html\\n/g, '').replace(/```/g, '').trim() }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "attachment_owasp"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3216,
+        928
+      ],
+      "id": "40bfca38-834d-43a2-bf81-d9b804df2630",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3392,
+        1216
+      ],
+      "id": "0343eac8-bcbe-4133-81d0-fe3898566bf9",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3984,
+        1248
+      ],
+      "id": "12d1d7c5-2bc8-4efd-9677-967a0f6758a4",
+      "name": "Merge2"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "website": "https://fevertokens.io/",
+          "mail": "marwanehaddane5@gmail.com",
+          "date": null
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Generate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [
+          {
+            "node": "Create Markdown Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Cookies": {
+      "main": [
+        [
+          {
+            "node": "Analyze Cookies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze HTTPS": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Test Security Headers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Test HTTP Methods",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Test HTTPS Redirect",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Test CORS Preflight",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Test Cookies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Issues Found?": {
+      "main": [
+        [
+          {
+            "node": "Format Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Cookies": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Analyze Headers": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Methods": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate Report": {
+      "main": [
+        [
+          {
+            "node": "Issues Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test HTTP Methods": {
+      "main": [
+        [
+          {
+            "node": "Analyze Methods",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test CORS Preflight": {
+      "main": [
+        [
+          {
+            "node": "Analyze CORS Preflight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test HTTPS Redirect": {
+      "main": [
+        [
+          {
+            "node": "Analyze HTTPS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Security Headers": {
+      "main": [
+        [
+          {
+            "node": "Analyze Headers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze CORS Preflight": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Create Markdown Report": {
+      "main": [
+        [
+          {
+            "node": "Markdown to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Perform a scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perform a scan": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get a scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a scan": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Send a message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message4": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a8513bf5-0857-46b9-9cd1-4dc1727778ba",
+  "meta": {
+    "templateId": "10898",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "34227740312ed78b96c5ad3f3c95d64a69f7d9b283a882e503a95a245d576aa3"
+  },
+  "id": "8B3z8M5aVA1CXUto",
+  "tags": []
+}

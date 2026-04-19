@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block title %}Email Classifier{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-up">
+    <!-- Header -->
+    <div class="border-b border-gray-200 dark:border-cyber-border pb-5 mb-8">
+        <h2 class="text-3xl font-bold leading-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <svg class="h-8 w-8 text-cyber-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Email Classifier
+        </h2>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Powered by TinyLlama AI. Analyze email content locally to classify it as "Phishing" or "Safe".
+        </p>
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+        <div class="cyber-card p-6 sm:p-8">
+            <form id="classifier-form" onsubmit="event.preventDefault(); runClassification();" class="space-y-6">
+
+                <div>
+                    <label for="email-content" class="cyber-label">Paste Email Content <span
+                            class="text-red-500">*</span></label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <textarea id="email-content" required rows="10"
+                            class="cyber-input font-mono text-sm bg-gray-50/50 dark:bg-cyber-900/50 text-gray-800 dark:text-green-400 py-2 px-3 resize-none w-full"
+                            autofocus placeholder="Subject: Urgent: Password Reset Required!
+...
+..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Alert block -->
+                <div id="classifier-alert" class="hidden rounded-md p-4 mb-4" role="alert">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <!-- Icon changes based on status via JS -->
+                            <svg id="alert-icon" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor"></svg>
+                        </div>
+                        <div class="ml-3 flex items-center">
+                            <p id="alert-text" class="text-xl font-bold tracking-wider uppercase"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <button id="scan-btn" type="submit"
+                        class="w-full flex justify-center items-center gap-2 py-4 text-base font-bold uppercase tracking-widest rounded-xl bg-cyber-green text-black hover:bg-cyber-greenGlow hover:-translate-y-1 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.8)] group">
+                        <svg class="h-5 w-5 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
+                            </path>
+                        </svg>
+                        <span id="scan-btn-text">Analyze with Llama</span>
+                    </button>
+                    <p class="mt-2 text-xs text-center text-gray-500">First run may take a moment to load the model into
+                        memory.</p>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function runClassification() {
+        const content = document.getElementById('email-content').value;
+        if (!content) return;
+
+        const btn = document.getElementById('scan-btn');
+        const btnText = document.getElementById('scan-btn-text');
+        const alertBox = document.getElementById('classifier-alert');
+        const alertText = document.getElementById('alert-text');
+        const alertIcon = document.getElementById('alert-icon');
+
+        // Reset and show loading state
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        btnText.innerText = 'Analyzing...';
+        alertBox.classList.add('hidden');
+        alertBox.classList.remove('bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-gray-100', 'text-gray-800', 'dark:bg-green-900', 'dark:text-green-200', 'dark:bg-red-900', 'dark:text-red-200', 'dark:bg-gray-800', 'dark:text-gray-200');
+
+        try {
+            const res = await fetch('/classifier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email_content: content })
+            });
+            const data = await res.json();
+
+            alertBox.classList.remove('hidden');
+
+            if (data.status === 'success') {
+                if (data.classification === 'Safe') {
+                    alertBox.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-200');
+                    alertIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                    alertText.innerText = 'SAFE';
+                } else if (data.classification === 'Phishing') {
+                    alertBox.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-200');
+                    alertIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />';
+                    alertText.innerText = 'PHISHING DETECTED';
+                } else {
+                    alertBox.classList.add('bg-gray-100', 'text-gray-800', 'dark:bg-gray-800', 'dark:text-gray-200');
+                    alertIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                    alertText.innerText = data.classification;
+                }
+            } else {
+                alertBox.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-200');
+                alertIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                alertText.innerText = data.message || 'Error occurred during analysis.';
+            }
+
+        } catch (err) {
+            console.error(err);
+            alertBox.classList.remove('hidden');
+            alertBox.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-200');
+            alertIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+            alertText.innerText = 'Network error. Could not reach server.';
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnText.innerText = 'Analyze with Llama';
+        }
+    }
+</script>
+{% endblock %}
