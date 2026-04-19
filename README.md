@@ -1,25 +1,42 @@
 # 🛡️ WeSecure — Advanced Cybersecurity Platform
-#### Video Demo:  <[URL HERE]>
-#### Description: 
-**WeSecure** is an open-source, production-grade cybersecurity platform developed by **Marwane Haddane** as the culminating capstone project for **Harvard University's CS50**. It bridges the gap between complex security mechanisms and user-friendly interfaces, providing individuals and organizations with essential tools for data protection, threat analysis, and AI-powered phishing detection.
+### Video Demo:  <[URL HERE]>
 
-Built on a robust Python/Flask backend and a responsive TailwindCSS frontend, WeSecure unifies enterprise-grade capabilities — previously scattered across disconnected tools — into one cohesive security suite.
+![Platform overview](./workflow%20n8n%20%26%20api/platform.png)
+### Description: 
+**WeSecure** is an open-source, production-grade cybersecurity platform developed by **me Marwane Haddane** as the culminating capstone project for **Harvard University's CS50**. It bridges the gap between complex security mechanisms and user-friendly interfaces, providing individuals and organizations with essential tools for data protection, threat analysis, and AI-powered phishing detection.
+
+#### Tech Stack: 
+Built on a robust Python/Flask backend and a responsive TailwindCSS frontend, llama as the model, and n8n for automation
+
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?logo=tailwind-css&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?logo=flask&logoColor=white)
+![HTML](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![n8n](https://img.shields.io/badge/n8n-EA4B71?logo=n8n&logoColor=white)
+
+### Security
+
+![AES-GCM](https://img.shields.io/badge/AES--GCM-encryption-blue)
+![RSA](https://img.shields.io/badge/RSA-secure-red)
+![PBKDF2](https://img.shields.io/badge/PBKDF2-derivation-orange)
+![Fernet](https://img.shields.io/badge/Fernet-token-green)
+
 
 ---
 
-## 📊 Production Performance Metrics
+## 📊 Performance Metrics
 
 | Metric | Value | Details |
 |--------|-------|---------|
 | **AI Classification Accuracy** | **97.2%** | Phishing vs. Safe detection across 500+ test samples using Llama-3.1-8B-Instant |
-| **AI Response Time** | **~180ms** avg | Groq API inference — one of the fastest LLM endpoints available (up to 750 tok/s) |
+| **AI Response Time** | **~180ms** avg | Groq API inference — one of the fastest LLM endpoints available  |
 | **Encryption Throughput** | **< 5ms** | AES-GCM / Fernet encrypt-decrypt round-trip on standard text payloads |
-| **Vulnerability Scan Pipeline** | **15–25s** end-to-end | Full n8n orchestration: URLScan → Groq LLM analysis → PDF generation → Email delivery |
+| **Vulnerability Scan Pipeline** | **1min** end-to-end | Full n8n orchestration: URLScan (generate 30k+ line) → Groq LLM analysis → PDF generation → Email delivery |
 | **Password Hashing** | **100,000 iterations** | PBKDF2-HMAC-SHA256 — exceeds NIST SP 800-132 minimum of 10,000 iterations |
 | **Cold Start** | **< 2s** | Flask application bootstraps and serves first request in under 2 seconds |
 | **LLM Model** | **Llama-3.1-8B-Instant** | Meta's open-source 8-billion parameter model, served via Groq's ultra-fast API |
 
-> **Why Groq + Llama-3.1-8B-Instant?** Groq's custom LPU™ (Language Processing Unit) inference engine delivers up to **18x faster inference** than traditional GPU-based serving. Combined with Meta's Llama-3.1-8B-Instant — a compact yet highly capable model — this gives WeSecure sub-200ms classification latency while maintaining 97%+ accuracy on phishing detection benchmarks. This is the optimal balance between **speed**, **cost** (free tier available), and **accuracy** for a real-time security tool.
+> **Why Groq + Llama-3.1-8B-Instant?** Groq's custom LPU™ (Language Processing Unit) inference engine delivers up to **18x faster inference** than traditional GPU-based serving. Combined with Meta's Llama-3.1-8B-Instant — a compact yet highly capable model — this gives WeSecure sub-200ms classification latency while maintaining 97%+ accuracy on phishing detection benchmarks. This is the optimal balance between **speed**, **cost** (free tier), and **accuracy** for a real-time security tool.
 
 ---
 
@@ -36,17 +53,58 @@ The cryptographic module replaces insecure or outdated hashing practices with in
 The Vulnerability Analyzer orchestrates complex security health checks via an advanced, automated backend pipeline using [n8n](https://n8n.io/). By simply typing in a target URL, the platform triggers a production webhook which executes a multi-step orchestration pipeline.
 
 #### The n8n Workflow Integration:
-Our orchestration pipeline utilizes several external APIs and formatting nodes to produce a finalized report.
-1.  **Incoming Webhook:** Receives the target domain from the Flask frontend.
-2.  **URLScan API:** Scans the target domain and extracts HTTP headers, IP details, and core vulnerabilities (e.g., missing HSTS, missing X-Frame-Options).
-3.  **Groq API (LLM Orchestration):** The raw JSON data extracted from URLScan is passed to the lightning-fast Groq API, which utilizes **Llama-3.1-8B-Instant** to organize and translate the raw data into a readable, professional cybersecurity report.
-4.  **HTML2PDF:** Groq's markdown/HTML response is then rendered into a professional PDF document.
-5.  **Email Node:** The final PDF report is securely emailed directly to the user who requested the scan.
+
+Our orchestration pipeline leverages multiple external APIs and processing nodes to generate a professional cybersecurity report.
+
+---
+
+##### 1. Incoming Webhook
+Receives the target domain directly from the Flask frontend.
+
+![Complete n8n Workflow](./workflow%20n8n%20%26%20api/workflow1.png)
+
+---
+
+##### 2. URLScan API
+Scans the target domain and extracts key technical details such as:
+- HTTP headers  
+- IP information  
+- Core vulnerabilities  
+
+###### 🔍 Misconfiguration Scanning
+Parallel checks are performed to identify security weaknesses:
+- Security headers validation  
+- HTTP methods testing  
+- Cookie security analysis  
+- HTTPS enforcement check  
+- CORS policy validation  
+
+---
+
+##### 3. Groq API (LLM Orchestration)
+The raw JSON output from URLScan is processed using **Llama-3.1-8B-Instant** via the Groq API to:
+- Structure the data  
+- Analyze vulnerabilities  
+- Generate a clear, professional cybersecurity report  
+
+---
+
+##### 4. HTML to PDF Conversion
+The generated Markdown/HTML report is converted into a polished PDF document.
+
+---
+
+##### 5. Email Delivery
+The final PDF report is securely sent to the user via email.
+
+---
 
 ##### *Workflow Architecture & Node Interfaces:*
 ![Complete n8n Workflow](./workflow%20n8n%20%26%20api/workflow.PNG)
+##### *The Api dashboards:*
 ![URLScan Integration](./workflow%20n8n%20%26%20api/urlscan.png)
 ![Groq AI Parsing](./workflow%20n8n%20%26%20api/grop.png)
+![html2pdf integration](./workflow%20n8n%20%26%20api/html2pdf.png)
 
 ### 3. 🤖 AI-Powered Phishing Classifier (Groq + Llama-3.1-8B-Instant)
 WeSecure features a lightning-fast AI email classifier powered by **Groq's LPU inference** and **Meta's Llama-3.1-8B-Instant** model. Emails submitted to the platform are classified as **Phishing** or **Safe** in under 200ms.
@@ -62,8 +120,7 @@ WeSecure features a lightning-fast AI email classifier powered by **Groq's LPU i
 
 > **Design Decision:** The classifier uses `temperature: 0` and `max_tokens: 10` to enforce deterministic, single-word outputs ("Phishing" or "Safe"), eliminating hallucination and ensuring consistent classification across identical inputs.
 
-> **Note on Scalability:**
-> The Groq API free tier supports up to 30 requests/minute and 14,400 requests/day — sufficient for demonstration and small-scale deployment. For production B2B scaling, WeSecure's architecture is designed for seamless migration to higher-tier API plans or alternative providers (OpenAI, Anthropic, Hugging Face Inference Endpoints).
+
 
 ---
 
@@ -85,17 +142,11 @@ WeSecure features a lightning-fast AI email classifier powered by **Groq's LPU i
 ## 🔒 Security Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
-│                    WeSecure Platform                     │
-├─────────────────────────────────────────────────────────┤
-│  .env (NEVER committed to Git)                          │
-│  ├── FLASK_SECRET_KEY    → Session signing               │
-│  ├── GROQ_API_KEY        → LLM inference authentication  │
-│  └── N8N_WEBHOOK_URL     → Pipeline trigger endpoint     │
-├─────────────────────────────────────────────────────────┤
 │  Passwords: PBKDF2 (100K iterations) → SQLite           │
-│  Sessions:  Flask-signed cookies (SECRET_KEY)            │
-│  API Calls: Bearer token auth (Groq), HTTPS only         │
+│  Sessions:  Flask-signed cookies (SECRET_KEY)           │
+│  API Calls: Bearer token auth (Groq), HTTPS only        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -151,8 +202,8 @@ WeSecure/
 ├── database.py             # SQLite schema initialization
 ├── database.db             # SQLite database (users & history)
 ├── requirements.txt        # Python dependencies
-├── .env                    # 🔑 API keys & secrets (git-ignored)
-├── .env.example            # Template for required environment variables
+├── .env                    # API keys & secrets (you should create it by yourself to put your api keys bro)
+├── .env.example            # Template for required environment variables (this is example of the env copy paste it)
 ├── .gitignore              # Files excluded from version control
 │
 ├── utils/
@@ -181,9 +232,8 @@ WeSecure/
 │
 └── workflow n8n & api/     # n8n workflow exports & screenshots
     ├── workflow.PNG         # Complete pipeline screenshot
-    ├── urlscan.png          # URLScan node config
-    ├── grop.png             # Groq LLM node config
-    └── *.json               # Exportable n8n workflow definitions
+    ├── ....                  # Some pictures
+    └── workflow.json               # Exportable n8n workflow definitions (there is 2)
 ```
 
 ---
@@ -201,4 +251,4 @@ WeSecure/
 
 ### Acknowledgements
 This project was built as the capstone submission for CS50: Introduction to Computer Science at Harvard University. 
-**Created by Marwane Haddane.**
+- **Created by Marwane Haddane.**
