@@ -1,4 +1,4 @@
-# 🛡️ WeSecure — Advanced Cybersecurity Platform
+# 🛡️ WeSecure 
 ### Video Demo:  <[URL HERE]>
 
 ![Platform overview](./workflow%20n8n%20%26%20api/platform.png)
