@@ -141,8 +141,8 @@ WeSecure features a lightning-fast AI email classifier powered by **Groq's LPU i
 
 ## 🔒 Security Architecture
 
-```
 ![Platform overview](./workflow%20n8n%20%26%20api/database.PNG)
+```
 ┌─────────────────────────────────────────────────────────┐
 │  Passwords: PBKDF2 (100K iterations) → SQLite           │
 │  Sessions:  Flask-signed cookies (SECRET_KEY)           │
