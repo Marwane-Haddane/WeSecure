@@ -1,5 +1,5 @@
 # 🛡️ WeSecure 
-### Video Demo:  <[[URL HERE]](https://youtu.be/or5072HygA8)>
+### Video Demo:  [[URL HERE]](https://youtu.be/or5072HygA8)
 
 ![Platform overview](./workflow%20n8n%20%26%20api/platform.png)
 ### Description: 
